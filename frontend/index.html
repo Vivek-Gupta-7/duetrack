@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DueTrack — Customer Due Manager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#F7F8F4;
+    --surface:#FFFFFF;
+    --ink:#1C2321;
+    --ink-soft:#5B6660;
+    --ink-faint:#92998F;
+    --pine:#14342B;
+    --pine-light:#1F4B3F;
+    --pine-pale:#E7EEEA;
+    --marigold:#D98E3B;
+    --marigold-soft:#FBE9D2;
+    --marigold-deep:#9C5E1B;
+    --sage:#4F7A52;
+    --sage-soft:#E1ECE0;
+    --brick:#C0533E;
+    --brick-soft:#F8E3DE;
+    --border:#E5E7E0;
+    --shadow-sm:0 1px 2px rgba(20,52,43,0.06);
+    --shadow-md:0 10px 28px rgba(20,52,43,0.10);
+    --shadow-lg:0 24px 56px rgba(20,52,43,0.18);
+    --r-lg:20px;
+    --r-md:14px;
+    --r-sm:10px;
+    --font-ui:'Manrope',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+    --sidebar-w:264px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-ui);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  body.no-scroll{overflow:hidden;}
+  h1,h2,h3,h4{margin:0;font-family:var(--font-ui);letter-spacing:-0.01em;}
+  p{margin:0;}
+  ul{list-style:none;margin:0;padding:0;}
+  button{font-family:var(--font-ui);cursor:pointer;}
+  input,textarea,select{font-family:var(--font-ui);}
+  a{color:inherit;}
+  ::selection{background:var(--marigold-soft);color:var(--marigold-deep);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+  }
+
+  /* ---------- shared utility ---------- */
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+  .icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .icon svg{display:block;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:var(--r-sm);font-weight:700;font-size:14px;
+    padding:12px 20px;transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--pine);color:#fff;box-shadow:var(--shadow-sm);}
+  .btn-primary:hover{background:var(--pine-light);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .btn-secondary{background:var(--surface);color:var(--ink);border:1.5px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--pine);color:var(--pine);}
+  .btn-danger{background:var(--brick);color:#fff;}
+  .btn-danger:hover{background:#a8432f;box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .btn-ghost-disabled{background:var(--pine-pale);color:var(--ink-faint);cursor:not-allowed;border:1.5px dashed var(--border);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:9px 14px;font-size:13px;}
+
+  /* ---------- toast ---------- */
+  #toast-region{position:fixed;top:20px;right:20px;z-index:500;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+  .toast{
+    pointer-events:auto;
+    display:flex;align-items:flex-start;gap:12px;
+    background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-lg);
+    padding:14px 16px;min-width:280px;max-width:360px;
+    border-left:4px solid var(--sage);
+    animation:toastIn .3s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .toast.toast-error{border-left-color:var(--brick);}
+  .toast-icon{flex-shrink:0;margin-top:1px;color:var(--sage);}
+  .toast.toast-error .toast-icon{color:var(--brick);}
+  .toast-text{font-size:13.5px;font-weight:600;color:var(--ink);}
+  @keyframes toastIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+  /* ---------- auth screens ---------- */
+  .auth-shell{display:flex;min-height:100vh;}
+  .auth-brand{
+    flex:1.05;background:var(--pine);color:#fff;
+    padding:56px 64px;display:flex;flex-direction:column;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .auth-brand .shape{position:absolute;border-radius:50%;filter:blur(2px);opacity:.5;}
+  .shape-a{width:220px;height:220px;background:radial-gradient(circle,rgba(217,142,59,.35),transparent 70%);top:-60px;right:-40px;animation:floatY 7s ease-in-out infinite;}
+  .shape-b{width:160px;height:160px;background:radial-gradient(circle,rgba(79,122,82,.4),transparent 70%);bottom:40px;left:-50px;animation:floatY 9s ease-in-out infinite 1s;}
+  @keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px);}}
+  .brand-mark{display:flex;align-items:center;gap:10px;position:relative;z-index:2;}
+  .brand-badge{width:38px;height:38px;border-radius:11px;background:var(--marigold);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:var(--pine);font-size:15px;}
+  .brand-name{font-size:18px;font-weight:800;letter-spacing:-0.01em;}
+  .brand-copy{position:relative;z-index:2;max-width:380px;}
+  .brand-copy h1{font-size:32px;font-weight:800;line-height:1.2;margin-bottom:14px;}
+  .brand-copy p{color:rgba(255,255,255,.7);font-size:15px;line-height:1.6;}
+  .ledger-illustration{position:relative;z-index:2;margin-top:32px;}
+  .auth-foot{position:relative;z-index:2;color:rgba(255,255,255,.45);font-size:12.5px;}
+
+  .auth-form-panel{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--paper);}
+  .auth-card{width:100%;max-width:400px;background:var(--surface);border-radius:var(--r-lg);padding:40px 36px;box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:fadeUp .35s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .auth-card .mobile-logo{display:none;align-items:center;gap:10px;margin-bottom:24px;}
+  .auth-card h2{font-size:22px;font-weight:800;margin-bottom:6px;}
+  .auth-sub{color:var(--ink-soft);font-size:14px;margin-bottom:26px;}
+  .auth-switch{margin-top:22px;text-align:center;font-size:13.5px;color:var(--ink-soft);}
+  .auth-switch button{background:none;border:none;color:var(--pine);font-weight:700;cursor:pointer;font-size:13.5px;padding:0;}
+  .auth-error-banner{display:none;align-items:center;gap:8px;background:var(--brick-soft);color:var(--brick);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:18px;}
+  .auth-error-banner.show{display:flex;}
+
+  @media (max-width:899px){
+    .auth-brand{display:none;}
+    .auth-card .mobile-logo{display:flex;}
+  }
+
+  /* ---------- form fields (shared) ---------- */
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-weight:700;font-size:13px;margin-bottom:7px;color:var(--ink);}
+  .field .hint{font-weight:500;color:var(--ink-faint);font-size:12px;}
+  .field input, .field textarea{
+    width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+    font-size:14.5px;color:var(--ink);background:var(--surface);
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field textarea{resize:vertical;min-height:64px;}
+  .field input:focus, .field textarea:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px rgba(20,52,43,.12);}
+  .field input.error, .field textarea.error{border-color:var(--brick);}
+  .field input.error:focus, .field textarea.error:focus{box-shadow:0 0 0 3px rgba(192,83,62,.14);}
+  .error-text{display:none;align-items:center;gap:5px;color:var(--brick);font-size:12.5px;font-weight:600;margin-top:6px;}
+  .error-text.show{display:flex;}
+  .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+
+  /* ---------- app shell ---------- */
+  .app-shell{display:flex;min-height:100vh;}
+  .sidebar-overlay{display:none;}
+  .sidebar-overlay.show{display:block;position:fixed;inset:0;background:rgba(20,52,43,.42);z-index:90;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+  .sidebar{
+    width:var(--sidebar-w);background:var(--pine);color:#fff;
+    position:fixed;top:0;left:0;bottom:0;z-index:95;
+    display:flex;flex-direction:column;padding:24px 18px;
+    transform:translateX(-100%);transition:transform .25s ease;
+  }
+  .sidebar.open{transform:translateX(0);}
+
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:6px 10px 22px;}
+  .sidebar-nav{display:flex;flex-direction:column;gap:4px;flex:1;}
+  .nav-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.4);padding:14px 14px 8px;}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r-sm);
+    color:rgba(255,255,255,.74);font-weight:700;font-size:14px;transition:background .15s ease,color .15s ease;
+    border:none;background:none;width:100%;text-align:left;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .nav-item.active{background:rgba(255,255,255,.15);color:#fff;}
+  .nav-item .icon{color:inherit;}
+  .nav-item-soon{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r-sm);color:rgba(255,255,255,.32);font-weight:700;font-size:14px;cursor:not-allowed;}
+  .soon-pill{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.1);padding:3px 7px;border-radius:999px;color:rgba(255,255,255,.55);}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:14px 4px;}
+
+  .account-card{display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--r-md);background:rgba(255,255,255,.06);margin-top:8px;}
+  .account-avatar{width:36px;height:36px;border-radius:10px;background:var(--marigold);color:var(--pine);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
+  .account-meta{min-width:0;}
+  .account-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .account-email{font-size:11.5px;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidebar-version{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:14px;}
+
+  .main-area{flex:1;min-width:0;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:60;
+  }
+  .topbar-title{font-size:16px;font-weight:800;}
+  .hamburger-btn{background:none;border:1.5px solid var(--border);border-radius:10px;padding:8px;display:flex;color:var(--ink);}
+  .topbar-add{background:var(--pine);color:#fff;border:none;border-radius:10px;padding:8px;display:flex;}
+
+  .main-content{padding:32px 40px 60px;animation:fadeIn .3s ease;max-width:1280px;}
+
+  @media (min-width:1024px){
+    .topbar{display:none;}
+    .sidebar{transform:none;}
+    .main-area{margin-left:var(--sidebar-w);}
+  }
+  @media (max-width:1023px){
+    .main-content{padding:22px 20px 50px;}
+  }
+  @media (max-width:639px){
+    .main-content{padding:18px 14px 44px;}
+    .form-grid-2{grid-template-columns:1fr;}
+  }
+
+  /* ---------- page header ---------- */
+  .page-head{margin-bottom:28px;}
+  .page-head h1{font-size:25px;font-weight:800;}
+  .page-head p{color:var(--ink-soft);font-size:14.5px;margin-top:6px;}
+  .page-head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+
+  /* ---------- cards ---------- */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);}
+
+  /* ---------- stats grid ---------- */
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:32px;}
+  @media (max-width:1023px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:539px){.stats-grid{grid-template-columns:1fr;}}
+  .stat-card{
+    padding:22px;transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+  .stat-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+  .stat-value{font-family:var(--font-mono);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);}
+  .stat-label{font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
+
+  /* ---------- ledger amount styling ---------- */
+  .amt{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:600;padding-left:9px;border-left:3px solid var(--ink-faint);color:var(--ink);white-space:nowrap;}
+  .amt-total{border-left-color:var(--pine);}
+  .amt-paid{border-left-color:var(--sage);}
+  .amt-due{border-left-color:var(--marigold);color:var(--marigold-deep);}
+  .progress-track{width:74px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:7px;margin-left:9px;}
+  .progress-fill{height:100%;border-radius:2px;transition:width .3s ease;}
+  .progress-label{font-size:10.5px;color:var(--ink-faint);margin-top:3px;margin-left:9px;font-weight:600;}
+
+  /* ---------- badges ---------- */
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;}
+  .badge-pending{background:var(--marigold-soft);color:var(--marigold-deep);}
+  .badge-paid{background:var(--sage-soft);color:var(--sage);}
+
+  /* ---------- section card (recent / list) ---------- */
+  .section-card{padding:24px;}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
+  .section-head h3{font-size:16px;font-weight:800;}
+  .link-btn{background:none;border:none;color:var(--pine);font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:4px;padding:0;}
+  .link-btn:hover{color:var(--pine-light);text-decoration:underline;}
+
+  /* ---------- table ---------- */
+  .table-wrap{overflow-x:auto;margin:0 -4px;}
+  table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:800;
+    color:var(--ink-faint);padding:0 16px 12px;border-bottom:1.5px solid var(--border);white-space:nowrap;
+  }
+  tbody td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:14px;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background .12s ease;}
+  tbody tr:hover{background:var(--paper);}
+  .cell-name{font-weight:700;color:var(--ink);}
+  .cell-phone{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);}
+  .cell-service{color:var(--ink-soft);font-size:13.5px;max-width:180px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cell-date{color:var(--ink-faint);font-size:12.5px;}
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{width:32px;height:32px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);transition:all .15s ease;}
+  .icon-btn:hover{border-color:var(--pine);color:var(--pine);background:var(--pine-pale);}
+  .icon-btn-danger:hover{border-color:var(--brick);color:var(--brick);background:var(--brick-soft);}
+
+  /* ---------- toolbar (customer list) ---------- */
+  .list-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+  .search-box{position:relative;flex:1;min-width:220px;max-width:340px;}
+  .search-box .icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-faint);}
+  .search-box input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;background:var(--surface);transition:border-color .15s ease, box-shadow .15s ease;}
+  .search-box input:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px rgba(20,52,43,.12);}
+  .pill-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .pill{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink-soft);transition:all .15s ease;}
+  .pill:hover{border-color:var(--pine);}
+  .pill.active{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .pill-count{font-family:var(--font-mono);font-size:11px;opacity:.75;}
+  .sort-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink-soft);margin-left:auto;}
+  .sort-btn:hover{border-color:var(--pine);color:var(--pine);}
+  .results-count{font-size:12.5px;color:var(--ink-faint);margin-bottom:14px;font-weight:600;}
+
+  /* ---------- pagination ---------- */
+  .pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:22px;}
+  .page-nav-btn{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all .15s ease;}
+  .page-nav-btn:hover:not(:disabled){border-color:var(--pine);color:var(--pine);}
+  .page-nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .page-label{font-size:13px;font-weight:700;color:var(--ink-soft);}
+
+  /* ---------- empty states ---------- */
+  .empty-state{text-align:center;padding:56px 20px;}
+  .empty-icon{width:56px;height:56px;border-radius:16px;background:var(--pine-pale);color:var(--pine);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .empty-state h4{font-size:16px;font-weight:800;margin-bottom:6px;}
+  .empty-state p{color:var(--ink-soft);font-size:13.5px;max-width:320px;margin:0 auto 20px;}
+
+  /* ---------- add due form ---------- */
+  .form-card{padding:32px;max-width:680px;}
+  .due-preview{
+    background:var(--marigold-soft);border-radius:var(--r-md);padding:18px 20px;margin:22px 0 26px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  }
+  .due-preview-label{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--marigold-deep);}
+  .due-preview-sub{font-size:12px;color:var(--marigold-deep);opacity:.75;margin-top:2px;}
+  .due-preview-value{font-family:var(--font-mono);font-size:30px;font-weight:700;color:var(--marigold-deep);font-variant-numeric:tabular-nums;}
+  .due-warning{display:none;align-items:center;gap:6px;color:var(--brick);font-size:12.5px;font-weight:700;margin-top:8px;}
+  .due-warning.show{display:flex;}
+  .form-actions{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+
+  /* ---------- modal ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,52,43,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .18s ease;}
+  .modal-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:100%;max-width:480px;padding:28px;animation:modalIn .22s cubic-bezier(.2,.9,.3,1.1);max-height:88vh;overflow-y:auto;}
+  @keyframes modalIn{from{transform:translateY(14px) scale(.97);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+  .modal-card.modal-wide{max-width:540px;}
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;}
+  .modal-close{background:none;border:none;color:var(--ink-faint);padding:4px;border-radius:8px;}
+  .modal-close:hover{background:var(--paper);color:var(--ink);}
+  .modal-title{font-size:19px;font-weight:800;}
+  .modal-warn-icon{width:48px;height:48px;border-radius:14px;background:var(--brick-soft);color:var(--brick);display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+  .modal-text{color:var(--ink-soft);font-size:14px;line-height:1.6;margin:10px 0 22px;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap;}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin:20px 0;}
+  .detail-item label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:5px;}
+  .detail-item .val{font-size:14.5px;font-weight:700;color:var(--ink);}
+  .detail-item .val.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .modal-divider{height:1px;background:var(--border);margin:18px 0;}
+  .upcoming-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:10px;}
+  .upcoming-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   DueTrack — Production
+   Vanilla JS single-page app. Talks to a real Express + PostgreSQL
+   API (see /backend) over fetch(), authenticated with a JWT stored
+   in localStorage. Every request is scoped server-side to the
+   logged-in shop owner, so each account only ever sees its own
+   customers and payments. See README.md for setup and deployment.
+============================================================ */
+
+/* ---------------- icon library (feather-style, stroke based) ---------------- */
+function icon(name, size){
+  size = size || 18;
+  const paths = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    plusCircle: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+    menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>',
+    eye: '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>',
+    trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
+    chevronLeft: '<path d="M15 18l-6-6 6-6"/>',
+    chevronRight: '<path d="M9 18l6-6-6-6"/>',
+    barChart: '<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="11" rx="1"/><rect x="17" y="3" width="3" height="15" rx="1"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    fileText: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+    wallet: '<path d="M21 7H5a2 2 0 0 1 0-4h12v4"/><path d="M3 7v12a2 2 0 0 0 2 2h16v-7a1 1 0 0 0-1-1h-5a2.5 2.5 0 0 1 0-5h5a1 1 0 0 0 1-1V7"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    calendarCheck: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    alertTriangle: '<path d="M10.29 3.86 1.82 18a1.5 1.5 0 0 0 1.3 2.25h17.76a1.5 1.5 0 0 0 1.3-2.25L13.71 3.86a1.5 1.5 0 0 0-2.42 0Z"/><path d="M12 9v4M12 17h.01"/>',
+    alertCircle: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>'
+  };
+  const p = paths[name] || '';
+  return '<span class="icon" style="width:'+size+'px;height:'+size+'px;"><svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg></span>';
+}
+
+/* ---------------- state ---------------- */
+const state = {
+  account: null,
+  session: { loggedIn: false },
+  auth: { screen: 'loading' },
+  route: 'dashboard',
+  customers: [],
+  dashboardStats: null,
+  recentCustomers: [],
+  ui: {
+    sidebarOpen: false,
+    toast: null,
+    modal: null,
+    modalPayments: [],
+    modalPaymentsLoading: false,
+    search: '',
+    statusFilter: 'all',
+    sortOrder: 'newest',
+    page: 1,
+    pageSize: 8
+  }
+};
+
+/* ---------------- helpers ---------------- */
+function uid(){ return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function fmt(n){
+  const num = Number(n) || 0;
+  return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) + ', ' +
+         d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+function isSameDay(iso){
+  const d = new Date(iso), n = new Date();
+  return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+}
+function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function isValidPhone(v){ return /^\+?[0-9]{7,15}$/.test(String(v).replace(/[\s-]/g,'')); }
+function initialsOf(name){
+  const parts = String(name||'').trim().split(/\s+/);
+  return ((parts[0]||'')[0]||'D').toUpperCase() + ((parts[1]||'')[0]||'').toUpperCase();
+}
+
+/* ---------------- API client ----------------
+   All data now lives in a real PostgreSQL database behind the
+   DueTrack API. This client wraps fetch() with the JWT auth token
+   and consistent error handling. Set window.DUETRACK_API_BASE
+   before this script runs (or edit API_BASE below) to point at
+   your deployed backend, e.g. https://your-api.onrender.com/api
+------------------------------------------------ */
+const API_BASE = window.DUETRACK_API_BASE || 'https://duetrack.onrender.com';
+const TOKEN_KEY = 'duetrack_token';
+
+function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
+function setToken(t){ try{ localStorage.setItem(TOKEN_KEY, t); }catch(e){} }
+function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+
+async function api(path, options){
+  options = options || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  const token = getToken();
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+
+  let res;
+  try{
+    res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+  }catch(networkErr){
+    const err = new Error('Could not reach the server. Check your connection and try again.');
+    err.isNetwork = true;
+    throw err;
+  }
+
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* no body */ }
+
+  if(!res.ok){
+    if(res.status === 401){
+      clearToken();
+      state.session.loggedIn = false;
+      state.auth.screen = 'login';
+    }
+    const err = new Error((data && data.error) || 'Something went wrong.');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+async function apiGet(path){ return api(path, { method:'GET' }); }
+async function apiPost(path, body){ return api(path, { method:'POST', body: JSON.stringify(body || {}) }); }
+async function apiPut(path, body){ return api(path, { method:'PUT', body: JSON.stringify(body || {}) }); }
+async function apiDelete(path){ return api(path, { method:'DELETE' }); }
+
+/* ---------------- data loaders (replace old localStorage calls) ---------------- */
+async function loadAccount(){
+  if(!getToken()) return null;
+  try{ const r = await apiGet('/auth/me'); return r.account; }
+  catch(e){ clearToken(); return null; }
+}
+async function loadCustomers(){
+  try{
+    const r = await apiGet('/customers?sort=' + state.ui.sortOrder + '&status=' + state.ui.statusFilter + (state.ui.search ? '&search=' + encodeURIComponent(state.ui.search) : ''));
+    return r.customers;
+  }catch(e){ return []; }
+}
+async function loadDashboardStats(){
+  try{ return await apiGet('/dashboard/stats'); }
+  catch(e){ return null; }
+}
+async function loadRecentCustomers(){
+  try{ const r = await apiGet('/dashboard/recent'); return r.customers; }
+  catch(e){ return []; }
+}
+
+/* ---------------- toast ---------------- */
+function showToast(type, message){
+  const tid = Date.now();
+  state.ui.toast = { type:type, message:message, id:tid };
+  paintToast();
+  setTimeout(function(){
+    if(state.ui.toast && state.ui.toast.id === tid){
+      state.ui.toast = null;
+      paintToast();
+    }
+  }, 3200);
+}
+function toastHTML(t){
+  return '<div class="toast '+(t.type==='error'?'toast-error':'')+'">' +
+    '<span class="toast-icon">'+icon(t.type==='error'?'alertTriangle':'check', 18)+'</span>' +
+    '<span class="toast-text">'+escapeHtml(t.message)+'</span>' +
+  '</div>';
+}
+function paintToast(){
+  const region = document.getElementById('toast-region');
+  if(region) region.innerHTML = state.ui.toast ? toastHTML(state.ui.toast) : '';
+}
+
+/* ---------------- field error helpers ---------------- */
+function showFieldError(id, msg){
+  const input = document.getElementById(id);
+  const err = document.getElementById(id+'Error');
+  if(input) input.classList.add('error');
+  if(err){ err.textContent = msg; err.classList.add('show'); }
+}
+function clearFieldError(id){
+  const input = document.getElementById(id);
+  const err = document.getElementById(id+'Error');
+  if(input) input.classList.remove('error');
+  if(err){ err.textContent=''; err.classList.remove('show'); }
+}
+
+/* ---------------- ledger illustration (auth panel) ---------------- */
+function ledgerIllustration(){
+  const rows = [
+    {w:150, dot:'var(--marigold)'},
+    {w:190, dot:'var(--marigold)'},
+    {w:120, dot:'var(--marigold)'},
+    {w:170, dot:'var(--sage)'}
+  ];
+  let inner = '';
+  rows.forEach(function(r, i){
+    const y = 18 + i*46;
+    inner += '<rect x="0" y="'+y+'" width="252" height="34" rx="10" fill="rgba(255,255,255,0.05)"/>' +
+      '<rect x="16" y="'+(y+13)+'" width="'+r.w+'" height="8" rx="4" fill="rgba(255,255,255,0.4)"/>' +
+      '<circle cx="222" cy="'+(y+17)+'" r="5" fill="'+r.dot+'"/>';
+  });
+  return '<svg class="ledger-illustration" width="252" height="200" viewBox="0 0 252 200" xmlns="http://www.w3.org/2000/svg">'+inner+'</svg>';
+}
+
+/* ---------------- auth: loading ---------------- */
+function renderLoading(){
+  return '<div class="auth-form-panel" style="min-height:100vh;">' +
+    '<div style="text-align:center;">' +
+      '<div class="brand-badge" style="margin:0 auto 14px;">DT</div>' +
+      '<p style="color:var(--ink-soft);font-size:13.5px;font-weight:600;">Loading DueTrack…</p>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------- auth: setup ---------------- */
+function renderSetup(){
+  return '<div class="auth-shell">' +
+    '<div class="auth-brand">' +
+      '<div class="shape shape-a"></div><div class="shape shape-b"></div>' +
+      '<div class="brand-mark"><div class="brand-badge">DT</div><div class="brand-name">DueTrack</div></div>' +
+      '<div class="brand-copy">' +
+        '<h1>Know who owes you. Get paid faster.</h1>' +
+        '<p>One simple ledger for every customer balance — built for salons, garages, cafés, clinics and repair shops.</p>' +
+        ledgerIllustration() +
+      '</div>' +
+      '<div class="auth-foot">© 2026 DueTrack · Built for small business owners</div>' +
+    '</div>' +
+    '<div class="auth-form-panel">' +
+      '<div class="auth-card">' +
+        '<div class="mobile-logo"><div class="brand-badge">DT</div><div class="brand-name" style="color:var(--ink);">DueTrack</div></div>' +
+        '<h2>Set up your shop</h2>' +
+        '<p class="auth-sub">Create your owner account to start tracking customer dues.</p>' +
+        '<div class="auth-error-banner" id="authError">'+icon('alertTriangle',15)+'<span id="authErrorText"></span></div>' +
+        '<form id="setupForm" novalidate>' +
+          '<div class="field">' +
+            '<label for="shopName">Shop / Business name</label>' +
+            '<input type="text" id="shopName" placeholder="e.g. Bella Salon" autocomplete="organization" />' +
+            '<small class="error-text" id="shopNameError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="ownerEmail">Owner email</label>' +
+            '<input type="email" id="ownerEmail" placeholder="you@example.com" autocomplete="email" />' +
+            '<small class="error-text" id="ownerEmailError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="ownerPassword">Password</label>' +
+            '<input type="password" id="ownerPassword" placeholder="At least 6 characters" autocomplete="new-password" />' +
+            '<small class="error-text" id="ownerPasswordError"></small>' +
+          '</div>' +
+          '<button type="submit" class="btn btn-primary btn-block">Create account &amp; continue</button>' +
+        '</form>' +
+        '<div class="auth-switch">Already have an account? <button type="button" data-action="goto-login">Log in instead</button></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------- auth: login ---------------- */
+function renderLogin(){
+  return '<div class="auth-shell">' +
+    '<div class="auth-brand">' +
+      '<div class="shape shape-a"></div><div class="shape shape-b"></div>' +
+      '<div class="brand-mark"><div class="brand-badge">DT</div><div class="brand-name">DueTrack</div></div>' +
+      '<div class="brand-copy">' +
+        '<h1>Know who owes you. Get paid faster.</h1>' +
+        '<p>One simple ledger for every customer balance — built for salons, garages, cafés, clinics and repair shops.</p>' +
+        ledgerIllustration() +
+      '</div>' +
+      '<div class="auth-foot">© 2026 DueTrack · Built for small business owners</div>' +
+    '</div>' +
+    '<div class="auth-form-panel">' +
+      '<div class="auth-card">' +
+        '<div class="mobile-logo"><div class="brand-badge">DT</div><div class="brand-name" style="color:var(--ink);">DueTrack</div></div>' +
+        '<h2>Welcome back</h2>' +
+        '<p class="auth-sub">Log in to manage your customer dues.</p>' +
+        '<div class="auth-error-banner" id="authError">'+icon('alertTriangle',15)+'<span id="authErrorText"></span></div>' +
+        '<form id="loginForm" novalidate>' +
+          '<div class="field">' +
+            '<label for="loginEmail">Email</label>' +
+            '<input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" />' +
+            '<small class="error-text" id="loginEmailError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="loginPassword">Password</label>' +
+            '<input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" />' +
+            '<small class="error-text" id="loginPasswordError"></small>' +
+          '</div>' +
+          '<button type="submit" class="btn btn-primary btn-block">Log in</button>' +
+        '</form>' +
+        '<div class="auth-switch">New shop? <button type="button" data-action="goto-setup">Create an account</button></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------- sidebar ---------------- */
+function renderSidebar(){
+  const items = [
+    { route:'dashboard', label:'Dashboard', i:'grid' },
+    { route:'addDue', label:'Add Due', i:'plusCircle' },
+    { route:'customerList', label:'Customer List', i:'users' }
+  ];
+  let nav = items.map(function(it){
+    return '<button type="button" class="nav-item '+(state.route===it.route?'active':'')+'" data-action="navigate:'+it.route+'">' +
+      icon(it.i,18) + '<span>'+it.label+'</span></button>';
+  }).join('');
+
+  nav += '<button type="button" class="nav-item" data-action="logout">'+icon('logout',18)+'<span>Logout</span></button>';
+
+  const acc = state.account || { shopName:'Your Shop', email:'' };
+
+  return '<aside class="sidebar '+(state.ui.sidebarOpen?'open':'')+'" id="sidebarEl">' +
+    '<div class="sidebar-logo"><div class="brand-badge">DT</div><div class="brand-name">DueTrack</div></div>' +
+    '<nav class="sidebar-nav">' + nav +
+      '<div class="sidebar-divider"></div>' +
+      '<div class="nav-section-label">Coming soon</div>' +
+      '<div class="nav-item-soon">'+icon('barChart',18)+'<span>Reports</span><span class="soon-pill">Soon</span></div>' +
+      '<div class="nav-item-soon">'+icon('fileText',18)+'<span>Invoices</span><span class="soon-pill">Soon</span></div>' +
+    '</nav>' +
+    '<div class="account-card">' +
+      '<div class="account-avatar">'+escapeHtml(initialsOf(acc.shopName))+'</div>' +
+      '<div class="account-meta">' +
+        '<div class="account-name">'+escapeHtml(acc.shopName)+'</div>' +
+        '<div class="account-email">'+escapeHtml(acc.email)+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sidebar-version">DueTrack · Production</div>' +
+  '</aside>';
+}
+
+function renderTopbar(){
+  const titles = { dashboard:'Dashboard', addDue:'Add Due', customerList:'Customer List' };
+  return '<div class="topbar">' +
+    '<button type="button" class="hamburger-btn" data-action="toggle-sidebar" aria-label="Open menu">'+icon('menu',20)+'</button>' +
+    '<div class="topbar-title">'+(titles[state.route]||'')+'</div>' +
+    '<button type="button" class="topbar-add" data-action="navigate:addDue" aria-label="Add due">'+icon('plusCircle',20)+'</button>' +
+  '</div>';
+}
+
+/* ---------------- stats ---------------- */
+function renderDashboard(){
+  const stats = state.dashboardStats || {
+    totalCustomers: 0, pendingCustomers: 0, paidCustomers: 0,
+    totalDueAmount: 0, totalCollectedAmount: 0, todaysCollection: 0
+  };
+  const recent = state.recentCustomers || [];
+
+  const statCards =
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--pine-pale);color:var(--pine);">'+icon('users',20)+'</div>' +
+      '<div class="stat-value">'+stats.totalCustomers+'</div>' +
+      '<div class="stat-label">Total Customers</div>' +
+    '</div>' +
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--brick-soft);color:var(--brick);">'+icon('clock',20)+'</div>' +
+      '<div class="stat-value">'+stats.pendingCustomers+'</div>' +
+      '<div class="stat-label">Pending Customers</div>' +
+    '</div>' +
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--sage-soft);color:var(--sage);">'+icon('check',20)+'</div>' +
+      '<div class="stat-value">'+stats.paidCustomers+'</div>' +
+      '<div class="stat-label">Paid Customers</div>' +
+    '</div>' +
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--marigold-soft);color:var(--marigold-deep);">'+icon('wallet',20)+'</div>' +
+      '<div class="stat-value">'+fmt(stats.totalDueAmount)+'</div>' +
+      '<div class="stat-label">Total Due Amount</div>' +
+    '</div>' +
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--sage-soft);color:var(--sage);">'+icon('wallet',20)+'</div>' +
+      '<div class="stat-value">'+fmt(stats.totalCollectedAmount)+'</div>' +
+      '<div class="stat-label">Total Collected</div>' +
+    '</div>' +
+    '<div class="card stat-card">' +
+      '<div class="stat-icon" style="background:var(--pine-pale);color:var(--pine);">'+icon('calendarCheck',20)+'</div>' +
+      '<div class="stat-value">'+fmt(stats.todaysCollection)+'</div>' +
+      '<div class="stat-label">Today&#39;s Collection</div>' +
+    '</div>';
+    '</div>';
+
+  let recentBody;
+  if(recent.length===0){
+    recentBody = '<div class="empty-state">' +
+      '<div class="empty-icon">'+icon('inbox',26)+'</div>' +
+      '<h4>No customers yet</h4>' +
+      '<p>Records you add will show up here so you can see your latest activity at a glance.</p>' +
+      '<button type="button" class="btn btn-primary" data-action="navigate:addDue">'+icon('plusCircle',16)+' Add your first due</button>' +
+    '</div>';
+  } else {
+    const rows = recent.map(function(c){
+      return '<tr>' +
+        '<td><div class="cell-name">'+escapeHtml(c.name)+'</div></td>' +
+        '<td><span class="cell-phone">'+escapeHtml(c.phone)+'</span></td>' +
+        '<td><span class="cell-service">'+escapeHtml(c.service)+'</span></td>' +
+        '<td><span class="amt amt-due">'+fmt(c.due)+'</span></td>' +
+        '<td>'+statusBadge(c.status)+'</td>' +
+        '<td><span class="cell-date">'+formatDate(c.createdAt)+'</span></td>' +
+      '</tr>';
+    }).join('');
+    recentBody = '<div class="table-wrap"><table><thead><tr>' +
+      '<th>Customer</th><th>Phone</th><th>Service</th><th>Due</th><th>Status</th><th>Date</th>' +
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+
+  return '<div class="page-head">' +
+      '<h1>Dashboard</h1>' +
+      '<p>A quick snapshot of your customer dues.</p>' +
+    '</div>' +
+    '<div class="stats-grid">'+statCards+'</div>' +
+    '<div class="card section-card">' +
+      '<div class="section-head">' +
+        '<h3>Recent Activity</h3>' +
+        (recent.length>0 ? '<button type="button" class="link-btn" data-action="navigate:customerList">View all '+icon('chevronRight',14)+'</button>' : '') +
+      '</div>' +
+      recentBody +
+    '</div>';
+}
+
+function statusBadge(status){
+  if(status==='Paid'){
+    return '<span class="badge badge-paid">'+icon('check',11)+' Paid</span>';
+  }
+  return '<span class="badge badge-pending">'+icon('clock',11)+' Pending</span>';
+}
+
+/* ---------------- add due page ---------------- */
+function renderAddDuePage(){
+  return '<div class="page-head">' +
+      '<h1>Add a due record</h1>' +
+      '<p>Log a new customer balance. The due amount is calculated for you.</p>' +
+    '</div>' +
+    '<div class="card form-card">' +
+      '<form id="addDueForm" novalidate>' +
+        '<div class="form-grid-2">' +
+          '<div class="field">' +
+            '<label for="customerName">Customer name</label>' +
+            '<input type="text" id="customerName" placeholder="e.g. Riya Sharma" autocomplete="off" />' +
+            '<small class="error-text" id="customerNameError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="customerPhone">Phone number</label>' +
+            '<input type="tel" id="customerPhone" placeholder="e.g. 9876543210" autocomplete="off" />' +
+            '<small class="error-text" id="customerPhoneError"></small>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="serviceDesc">Service or product description</label>' +
+          '<textarea id="serviceDesc" placeholder="e.g. Hair spa + haircut"></textarea>' +
+          '<small class="error-text" id="serviceDescError"></small>' +
+        '</div>' +
+        '<div class="form-grid-2">' +
+          '<div class="field">' +
+            '<label for="totalAmount">Total amount <span class="hint">(₹)</span></label>' +
+            '<input type="number" id="totalAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />' +
+            '<small class="error-text" id="totalAmountError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="paidAmount">Paid amount <span class="hint">(₹)</span></label>' +
+            '<input type="number" id="paidAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />' +
+            '<small class="error-text" id="paidAmountError"></small>' +
+          '</div>' +
+        '</div>' +
+        '<div class="due-preview">' +
+          '<div>' +
+            '<div class="due-preview-label">Due amount</div>' +
+            '<div class="due-preview-sub">Calculated automatically — total minus paid</div>' +
+            '<div class="due-warning" id="dueWarning">'+icon('alertTriangle',13)+' Paid amount cannot exceed the total</div>' +
+          '</div>' +
+          '<div class="due-preview-value" id="dueAmountValue">'+fmt(0)+'</div>' +
+        '</div>' +
+        '<div class="form-actions">' +
+          '<button type="submit" class="btn btn-primary">'+icon('check',16)+' Save record</button>' +
+          '<button type="button" class="btn btn-secondary" data-action="navigate:dashboard">Cancel</button>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+}
+
+function updateDuePreview(){
+  const t = parseFloat(document.getElementById('totalAmount').value);
+  const p = parseFloat(document.getElementById('paidAmount').value);
+  const total = isNaN(t) ? 0 : t;
+  const paid = isNaN(p) ? 0 : p;
+  const due = total - paid;
+  const el = document.getElementById('dueAmountValue');
+  if(el) el.textContent = fmt(due >= 0 ? due : 0);
+  const warn = document.getElementById('dueWarning');
+  if(warn){
+    if(total > 0 && paid > total){ warn.classList.add('show'); }
+    else { warn.classList.remove('show'); }
+  }
+}
+
+async function handleAddDueSubmit(form){
+  ['customerName','customerPhone','serviceDesc','totalAmount','paidAmount'].forEach(clearFieldError);
+
+  const name = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+  const service = document.getElementById('serviceDesc').value.trim();
+  const totalRaw = document.getElementById('totalAmount').value.trim();
+  const paidRaw = document.getElementById('paidAmount').value.trim();
+
+  let valid = true;
+  if(!name || name.length < 2){ showFieldError('customerName','Enter the customer full name.'); valid=false; }
+  if(!phone || !isValidPhone(phone)){ showFieldError('customerPhone','Enter a valid phone number (7-15 digits).'); valid=false; }
+  if(!service || service.length < 2){ showFieldError('serviceDesc','Describe the service or product.'); valid=false; }
+
+  const total = parseFloat(totalRaw);
+  const paid = parseFloat(paidRaw);
+
+  if(totalRaw==='' || isNaN(total) || total <= 0){ showFieldError('totalAmount','Enter a total amount greater than 0.'); valid=false; }
+  if(paidRaw==='' || isNaN(paid) || paid < 0){ showFieldError('paidAmount','Enter a valid paid amount.'); valid=false; }
+  else if(!isNaN(total) && total > 0 && paid > total){ showFieldError('paidAmount','Paid amount cannot exceed the total amount.'); valid=false; }
+
+  if(!valid) return;
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = true;
+
+  try{
+    const r = await apiPost('/customers', { name: name, phone: phone, service: service, total: total, paid: paid });
+    showToast('success', 'Due record saved for ' + name + '.');
+
+    state.ui.search = '';
+    state.ui.statusFilter = 'all';
+    state.ui.page = 1;
+    await navigate('customerList');
+
+    // Offer a WhatsApp reminder right away for any new due balance.
+    if(r.customer && r.customer.due > 0){
+      openWhatsappReminder(r.customer.id);
+    }
+  }catch(e){
+    showToast('error', e.message || 'Could not save the record. Please try again.');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+}
+
+/* ---------------- WhatsApp reminders ---------------- */
+async function openWhatsappReminder(customerId){
+  try{
+    const r = await apiGet('/customers/' + customerId + '/whatsapp-link');
+    window.open(r.link, '_blank', 'noopener');
+    showToast('success', 'WhatsApp reminder ready to send.');
+  }catch(e){
+    showToast('error', e.message || 'Could not generate the WhatsApp reminder.');
+  }
+}
+
+/* ---------------- customer list page ---------------- */
+function getFilteredCustomers(){
+  let list = state.customers.slice();
+  const q = state.ui.search.trim().toLowerCase();
+  if(q){
+    list = list.filter(function(c){
+      return c.name.toLowerCase().indexOf(q) !== -1 || c.phone.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  if(state.ui.statusFilter !== 'all'){
+    const want = state.ui.statusFilter === 'pending' ? 'Pending' : 'Paid';
+    list = list.filter(function(c){ return c.status === want; });
+  }
+  list.sort(function(a,b){
+    const diff = new Date(b.createdAt) - new Date(a.createdAt);
+    return state.ui.sortOrder === 'newest' ? diff : -diff;
+  });
+  return list;
+}
+
+function renderCustomerListPage(){
+  return '<div class="page-head">' +
+      '<div class="page-head-row">' +
+        '<div><h1>Customer List</h1><p>Search, filter and manage every due record.</p></div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-action="export-csv">'+icon('fileText',15)+' Export CSV</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-action="export-pdf">'+icon('fileText',15)+' Export PDF</button>' +
+          '<button type="button" class="btn btn-primary" data-action="navigate:addDue">'+icon('plusCircle',16)+' Add Due</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card section-card">' +
+      '<div class="list-toolbar">' +
+        '<div class="search-box">' +
+          icon('search',16) +
+          '<input type="text" id="searchInput" placeholder="Search by name or phone" value="'+escapeHtml(state.ui.search)+'" />' +
+        '</div>' +
+      '</div>' +
+      '<div id="table-region">' + buildListControlsAndTable() + '</div>' +
+    '</div>';
+}
+
+function buildListControlsAndTable(){
+  const all = state.customers.length;
+  const pendingCount = state.customers.filter(function(c){return c.status==='Pending';}).length;
+  const paidCount = state.customers.filter(function(c){return c.status==='Paid';}).length;
+
+  const pills =
+    '<div class="pill-group">' +
+      '<button type="button" class="pill '+(state.ui.statusFilter==='all'?'active':'')+'" data-action="set-filter:all">All <span class="pill-count">'+all+'</span></button>' +
+      '<button type="button" class="pill '+(state.ui.statusFilter==='pending'?'active':'')+'" data-action="set-filter:pending">Pending <span class="pill-count">'+pendingCount+'</span></button>' +
+      '<button type="button" class="pill '+(state.ui.statusFilter==='paid'?'active':'')+'" data-action="set-filter:paid">Paid <span class="pill-count">'+paidCount+'</span></button>' +
+    '</div>' +
+    '<button type="button" class="sort-btn" data-action="toggle-sort">'+icon('clock',14)+' '+(state.ui.sortOrder==='newest'?'Newest first':'Oldest first')+'</button>';
+
+  if(all === 0){
+    return '<div class="list-toolbar" style="margin-bottom:4px;">'+pills+'</div>' +
+      '<div class="empty-state">' +
+        '<div class="empty-icon">'+icon('inbox',26)+'</div>' +
+        '<h4>No customers yet</h4>' +
+        '<p>Add your first due record to start tracking who owes you money.</p>' +
+        '<button type="button" class="btn btn-primary" data-action="navigate:addDue">'+icon('plusCircle',16)+' Add Due</button>' +
+      '</div>';
+  }
+
+  const filtered = getFilteredCustomers();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / state.ui.pageSize));
+  if(state.ui.page > totalPages) state.ui.page = totalPages;
+  if(state.ui.page < 1) state.ui.page = 1;
+  const startIdx = (state.ui.page - 1) * state.ui.pageSize;
+  const pageRows = filtered.slice(startIdx, startIdx + state.ui.pageSize);
+
+  let body;
+  if(filtered.length === 0){
+    body = '<div class="empty-state">' +
+      '<div class="empty-icon">'+icon('search',26)+'</div>' +
+      '<h4>No matching records</h4>' +
+      '<p>Try a different search term or filter.</p>' +
+      '<button type="button" class="btn btn-secondary" data-action="clear-filters">Clear filters</button>' +
+    '</div>';
+  } else {
+    const rows = pageRows.map(renderRow).join('');
+    body = '<div class="results-count">Showing '+(startIdx+1)+'–'+Math.min(startIdx+pageRows.length, filtered.length)+' of '+filtered.length+' customer'+(filtered.length===1?'':'s')+'</div>' +
+      '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Customer</th><th>Phone</th><th>Service</th><th>Total</th><th>Paid</th><th>Due</th><th>Status</th><th>Date</th><th></th>' +
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>' +
+      '<div class="pagination">' +
+        '<button type="button" class="page-nav-btn" data-action="go-page:prev" '+(state.ui.page<=1?'disabled':'')+'>'+icon('chevronLeft',16)+'</button>' +
+        '<span class="page-label">Page '+state.ui.page+' of '+totalPages+'</span>' +
+        '<button type="button" class="page-nav-btn" data-action="go-page:next" '+(state.ui.page>=totalPages?'disabled':'')+'>'+icon('chevronRight',16)+'</button>' +
+      '</div>';
+  }
+
+  return '<div class="list-toolbar" style="margin-bottom:4px;">'+pills+'</div>' + body;
+}
+
+function renderRow(c){
+  const pct = c.total > 0 ? Math.min(100, Math.round((c.paid / c.total) * 100)) : 0;
+  const fillColor = c.status === 'Paid' ? 'var(--sage)' : 'var(--marigold)';
+  return '<tr>' +
+    '<td><div class="cell-name">'+escapeHtml(c.name)+'</div></td>' +
+    '<td><span class="cell-phone">'+escapeHtml(c.phone)+'</span></td>' +
+    '<td><span class="cell-service" title="'+escapeHtml(c.service)+'">'+escapeHtml(c.service)+'</span></td>' +
+    '<td><span class="amt amt-total">'+fmt(c.total)+'</span></td>' +
+    '<td><span class="amt amt-paid">'+fmt(c.paid)+'</span></td>' +
+    '<td>' +
+      '<span class="amt '+(c.status==='Paid'?'amt-paid':'amt-due')+'">'+fmt(c.due)+'</span>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+';"></div></div>' +
+      '<div class="progress-label">'+pct+'% paid</div>' +
+    '</td>' +
+    '<td>'+statusBadge(c.status)+'</td>' +
+    '<td><span class="cell-date">'+formatDate(c.createdAt)+'</span></td>' +
+    '<td><div class="row-actions">' +
+      '<button type="button" class="icon-btn" title="View details" data-action="view:'+c.id+'">'+icon('eye',15)+'</button>' +
+      (c.status==='Pending' ? '<button type="button" class="icon-btn" title="Send WhatsApp reminder" data-action="send-reminder:'+c.id+'">'+icon('bell',15)+'</button>' : '') +
+      '<button type="button" class="icon-btn icon-btn-danger" title="Delete record" data-action="delete:'+c.id+'">'+icon('trash',15)+'</button>' +
+    '</div></td>' +
+  '</tr>';
+}
+
+function refreshTableRegion(){
+  const region = document.getElementById('table-region');
+  if(region) region.innerHTML = buildListControlsAndTable();
+}
+
+/* ---------------- modal ---------------- */
+function renderModal(){
+  const m = state.ui.modal;
+  if(!m) return '';
+  const c = state.customers.find(function(x){ return x.id === m.id; });
+  if(!c) return '';
+
+  if(m.type === 'delete'){
+    return '<div class="modal-overlay">' +
+      '<div class="modal-card">' +
+        '<div class="modal-warn-icon">'+icon('alertTriangle',22)+'</div>' +
+        '<h3 class="modal-title">Delete this record?</h3>' +
+        '<p class="modal-text">This will permanently remove the due record for <strong>'+escapeHtml(c.name)+'</strong>. This action cannot be undone.</p>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>' +
+          '<button type="button" class="btn btn-danger" data-action="confirm-delete:'+c.id+'">'+icon('trash',15)+' Delete record</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if(m.type === 'edit'){
+    return '<div class="modal-overlay">' +
+      '<div class="modal-card">' +
+        '<div class="modal-head">' +
+          '<h3 class="modal-title">Edit record</h3>' +
+          '<button type="button" class="modal-close" data-action="close-modal">'+icon('x',20)+'</button>' +
+        '</div>' +
+        '<form id="editCustomerForm" data-id="'+c.id+'" novalidate>' +
+          '<div class="field">' +
+            '<label for="editName">Customer name</label>' +
+            '<input type="text" id="editName" value="'+escapeHtml(c.name)+'" />' +
+            '<small class="error-text" id="editNameError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="editPhone">Phone number</label>' +
+            '<input type="tel" id="editPhone" value="'+escapeHtml(c.phone)+'" />' +
+            '<small class="error-text" id="editPhoneError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="editService">Service or product</label>' +
+            '<textarea id="editService">'+escapeHtml(c.service)+'</textarea>' +
+            '<small class="error-text" id="editServiceError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="editTotal">Total amount <span class="hint">(₹) — paid so far: '+fmt(c.paid)+'</span></label>' +
+            '<input type="number" id="editTotal" value="'+c.total+'" min="0" step="0.01" />' +
+            '<small class="error-text" id="editTotalError"></small>' +
+          '</div>' +
+          '<div class="modal-actions">' +
+            '<button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>' +
+            '<button type="submit" class="btn btn-primary">'+icon('check',15)+' Save changes</button>' +
+          '</div>' +
+        '</form>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if(m.type === 'payment'){
+    return '<div class="modal-overlay">' +
+      '<div class="modal-card">' +
+        '<div class="modal-head">' +
+          '<h3 class="modal-title">Record a payment</h3>' +
+          '<button type="button" class="modal-close" data-action="close-modal">'+icon('x',20)+'</button>' +
+        '</div>' +
+        '<p class="modal-text" style="margin-top:0;">Remaining due for <strong>'+escapeHtml(c.name)+'</strong>: <strong>'+fmt(c.due)+'</strong></p>' +
+        '<form id="paymentForm" data-id="'+c.id+'" novalidate>' +
+          '<div class="field">' +
+            '<label for="paymentAmount">Amount received <span class="hint">(₹)</span></label>' +
+            '<input type="number" id="paymentAmount" placeholder="0.00" min="0.01" max="'+c.due+'" step="0.01" />' +
+            '<small class="error-text" id="paymentAmountError"></small>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="paymentNote">Note <span class="hint">(optional)</span></label>' +
+            '<input type="text" id="paymentNote" placeholder="e.g. Paid via UPI" />' +
+          '</div>' +
+          '<div class="modal-actions">' +
+            '<button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>' +
+            '<button type="submit" class="btn btn-primary">'+icon('check',15)+' Save payment</button>' +
+          '</div>' +
+        '</form>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // view details
+  const pct = c.total > 0 ? Math.min(100, Math.round((c.paid / c.total) * 100)) : 0;
+  const history = state.ui.modalPayments || [];
+  let historyHTML;
+  if(state.ui.modalPaymentsLoading){
+    historyHTML = '<p class="modal-text">Loading payment history…</p>';
+  } else if(history.length === 0){
+    historyHTML = '<p class="modal-text">No payments recorded yet.</p>';
+  } else {
+    historyHTML = '<ul style="display:flex;flex-direction:column;gap:8px;">' +
+      history.map(function(p){
+        return '<li style="display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--paper);border-radius:var(--r-sm);">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:13.5px;">'+fmt(p.amount)+'</div>' +
+            (p.note ? '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">'+escapeHtml(p.note)+'</div>' : '') +
+          '</div>' +
+          '<div class="cell-date" style="white-space:nowrap;">'+formatDate(p.paidAt)+'</div>' +
+        '</li>';
+      }).join('') +
+    '</ul>';
+  }
+
+  return '<div class="modal-overlay">' +
+    '<div class="modal-card modal-wide">' +
+      '<div class="modal-head">' +
+        '<div>' +
+          '<h3 class="modal-title">'+escapeHtml(c.name)+'</h3>' +
+          '<div style="margin-top:8px;">'+statusBadge(c.status)+'</div>' +
+        '</div>' +
+        '<button type="button" class="modal-close" data-action="close-modal">'+icon('x',20)+'</button>' +
+      '</div>' +
+      '<div class="detail-grid">' +
+        '<div class="detail-item"><label>Phone</label><div class="val mono">'+escapeHtml(c.phone)+'</div></div>' +
+        '<div class="detail-item"><label>Date created</label><div class="val">'+formatDate(c.createdAt)+'</div></div>' +
+        '<div class="detail-item" style="grid-column:1 / -1;"><label>Service / product</label><div class="val">'+escapeHtml(c.service)+'</div></div>' +
+        '<div class="detail-item"><label>Total amount</label><div class="val mono">'+fmt(c.total)+'</div></div>' +
+        '<div class="detail-item"><label>Paid amount</label><div class="val mono">'+fmt(c.paid)+'</div></div>' +
+        '<div class="detail-item" style="grid-column:1 / -1;">' +
+          '<label>Due amount — '+pct+'% paid</label>' +
+          '<div class="val mono" style="color:'+(c.status==='Paid'?'var(--sage)':'var(--marigold-deep)')+';">'+fmt(c.due)+'</div>' +
+          '<div class="progress-track" style="margin-left:0;width:100%;height:6px;"><div class="progress-fill" style="width:'+pct+'%;background:'+(c.status==='Paid'?'var(--sage)':'var(--marigold)')+';"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-divider"></div>' +
+      '<div class="upcoming-label">Payment history</div>' +
+      historyHTML +
+      '<div class="modal-divider"></div>' +
+      '<div class="upcoming-row">' +
+        (c.status==='Pending'
+          ? '<button type="button" class="btn btn-secondary btn-sm" data-action="record-payment:'+c.id+'">'+icon('check',14)+' Record Payment</button>'
+          : '') +
+        (c.status==='Pending'
+          ? '<button type="button" class="btn btn-secondary btn-sm" data-action="send-reminder:'+c.id+'">'+icon('bell',14)+' Send WhatsApp Reminder</button>'
+          : '') +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="edit:'+c.id+'">'+icon('fileText',14)+' Edit Record</button>' +
+      '</div>' +
+      '<div class="modal-actions">' +
+        '<button type="button" class="btn btn-secondary" data-action="close-modal">Close</button>' +
+        '<button type="button" class="btn btn-danger" data-action="delete:'+c.id+'">'+icon('trash',15)+' Delete record</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------- shell / router ---------------- */
+function renderShell(){
+  const pageContent = state.route==='dashboard' ? renderDashboard()
+    : state.route==='addDue' ? renderAddDuePage()
+    : renderCustomerListPage();
+
+  return '<div class="app-shell">' +
+      '<div class="sidebar-overlay '+(state.ui.sidebarOpen?'show':'')+'" data-action="close-sidebar"></div>' +
+      renderSidebar() +
+      '<div class="main-area">' +
+        renderTopbar() +
+        '<main class="main-content">' + pageContent + '</main>' +
+      '</div>' +
+    '</div>' +
+    (state.ui.modal ? renderModal() : '');
+}
+
+function renderApp(){
+  const root = document.getElementById('app');
+  let html = '<div id="toast-region">'+(state.ui.toast?toastHTML(state.ui.toast):'')+'</div>';
+
+  if(!state.session.loggedIn){
+    if(state.auth.screen === 'loading') html += renderLoading();
+    else if(state.auth.screen === 'setup') html += renderSetup();
+    else html += renderLogin();
+  } else {
+    html += renderShell();
+  }
+
+  root.innerHTML = html;
+  document.body.classList.toggle('no-scroll', !!state.ui.modal || (state.ui.sidebarOpen && window.innerWidth < 1024));
+
+  // auto-focus the search box if it exists and had focus context lost — skip, avoid stealing focus unexpectedly
+}
+
+async function navigate(route){
+  state.route = route;
+  state.ui.sidebarOpen = false;
+  renderApp();
+  window.scrollTo(0,0);
+
+  if(route === 'dashboard'){
+    await refreshDashboardData();
+    if(state.route === 'dashboard') renderApp();
+  } else if(route === 'customerList'){
+    state.customers = await loadCustomers();
+    if(state.route === 'customerList') renderApp();
+  }
+}
+
+async function refreshDashboardData(){
+  const stats = await loadDashboardStats();
+  if(stats) state.dashboardStats = stats;
+  state.recentCustomers = await loadRecentCustomers();
+}
+
+/* ---------------- auth handlers ---------------- */
+function showAuthError(msg){
+  const banner = document.getElementById('authError');
+  const text = document.getElementById('authErrorText');
+  if(banner && text){ text.textContent = msg; banner.classList.add('show'); }
+}
+
+async function handleSetupSubmit(){
+  ['shopName','ownerEmail','ownerPassword'].forEach(clearFieldError);
+  const banner = document.getElementById('authError');
+  if(banner) banner.classList.remove('show');
+
+  const shopName = document.getElementById('shopName').value.trim();
+  const email = document.getElementById('ownerEmail').value.trim();
+  const password = document.getElementById('ownerPassword').value;
+
+  let valid = true;
+  if(!shopName || shopName.length < 2){ showFieldError('shopName','Enter your shop or business name.'); valid=false; }
+  if(!email || !isValidEmail(email)){ showFieldError('ownerEmail','Enter a valid email address.'); valid=false; }
+  if(!password || password.length < 6){ showFieldError('ownerPassword','Use at least 6 characters.'); valid=false; }
+  if(!valid) return;
+
+  const submitBtn = document.querySelector('#setupForm button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = true;
+
+  try{
+    const r = await apiPost('/auth/register', { shopName: shopName, email: email, password: password });
+    setToken(r.token);
+    state.account = r.account;
+    state.session.loggedIn = true;
+    state.route = 'dashboard';
+    await refreshDashboardData();
+    renderApp();
+    showToast('success', 'Welcome to DueTrack, ' + shopName + '!');
+  }catch(e){
+    showAuthError(e.message || 'Could not create your account. Please try again.');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function handleLoginSubmit(){
+  ['loginEmail','loginPassword'].forEach(clearFieldError);
+  const banner = document.getElementById('authError');
+  if(banner) banner.classList.remove('show');
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  let valid = true;
+  if(!email || !isValidEmail(email)){ showFieldError('loginEmail','Enter a valid email address.'); valid=false; }
+  if(!password){ showFieldError('loginPassword','Enter your password.'); valid=false; }
+  if(!valid) return;
+
+  const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = true;
+
+  try{
+    const r = await apiPost('/auth/login', { email: email, password: password });
+    setToken(r.token);
+    state.account = r.account;
+    state.session.loggedIn = true;
+    state.route = 'dashboard';
+    await refreshDashboardData();
+    renderApp();
+    showToast('success', 'Welcome back!');
+  }catch(e){
+    showAuthError(e.message || 'Incorrect email or password. Please try again.');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+}
+
+function handleLogout(){
+  clearToken();
+  state.account = null;
+  state.customers = [];
+  state.session.loggedIn = false;
+  state.auth.screen = 'login';
+  state.ui.sidebarOpen = false;
+  state.ui.search = '';
+  state.ui.statusFilter = 'all';
+  state.ui.page = 1;
+  renderApp();
+}
+
+/* ---------------- delegated events ---------------- */
+document.addEventListener('click', function(e){
+  if(e.target.classList && e.target.classList.contains('modal-overlay')){
+    state.ui.modal = null;
+    state.ui.modalPayments = [];
+    renderApp();
+    return;
+  }
+  if(e.target.classList && e.target.classList.contains('sidebar-overlay')){
+    state.ui.sidebarOpen = false;
+    renderApp();
+    return;
+  }
+
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const action = el.dataset.action;
+  const parts = action.split(':');
+  const key = parts[0];
+  const arg = parts.slice(1).join(':');
+
+  switch(key){
+    case 'navigate': navigate(arg); break;
+    case 'logout': handleLogout(); break;
+    case 'toggle-sidebar': state.ui.sidebarOpen = !state.ui.sidebarOpen; renderApp(); break;
+    case 'close-sidebar': state.ui.sidebarOpen = false; renderApp(); break;
+    case 'goto-login': state.auth.screen = 'login'; renderApp(); break;
+    case 'goto-setup': state.auth.screen = 'setup'; renderApp(); break;
+    case 'view':
+      state.ui.modal = { type:'view', id:arg };
+      state.ui.modalPayments = [];
+      state.ui.modalPaymentsLoading = true;
+      renderApp();
+      apiGet('/customers/' + arg + '/payments').then(function(r){
+        state.ui.modalPayments = r.payments;
+        state.ui.modalPaymentsLoading = false;
+        if(state.ui.modal && state.ui.modal.id === arg) renderApp();
+      }).catch(function(){
+        state.ui.modalPaymentsLoading = false;
+        if(state.ui.modal && state.ui.modal.id === arg) renderApp();
+      });
+      break;
+    case 'edit': state.ui.modal = { type:'edit', id:arg }; renderApp(); break;
+    case 'record-payment': state.ui.modal = { type:'payment', id:arg }; renderApp(); break;
+    case 'delete': state.ui.modal = { type:'delete', id:arg }; renderApp(); break;
+    case 'send-reminder': openWhatsappReminder(arg); break;
+    case 'export-csv': exportData('csv'); break;
+    case 'export-pdf': exportData('pdf'); break;
+    case 'confirm-delete': {
+      const target = state.customers.find(function(c){ return c.id===arg; });
+      el.disabled = true;
+      apiDelete('/customers/' + arg).then(function(){
+        state.customers = state.customers.filter(function(c){ return c.id !== arg; });
+        state.ui.modal = null;
+        renderApp();
+        showToast('success', target ? ('Record for ' + target.name + ' deleted.') : 'Record deleted.');
+        refreshDashboardData();
+      }).catch(function(err){
+        el.disabled = false;
+        showToast('error', err.message || 'Could not delete the record.');
+      });
+      break;
+    }
+    case 'close-modal': state.ui.modal = null; state.ui.modalPayments = []; renderApp(); break;
+    case 'set-filter': state.ui.statusFilter = arg; state.ui.page = 1; refreshTableRegion(); break;
+    case 'toggle-sort': state.ui.sortOrder = state.ui.sortOrder === 'newest' ? 'oldest' : 'newest'; refreshTableRegion(); break;
+    case 'go-page':
+      if(arg === 'prev') state.ui.page = Math.max(1, state.ui.page - 1);
+      else if(arg === 'next') state.ui.page = state.ui.page + 1;
+      refreshTableRegion();
+      break;
+    case 'clear-filters':
+      state.ui.search = ''; state.ui.statusFilter = 'all'; state.ui.page = 1;
+      const si = document.getElementById('searchInput'); if(si) si.value = '';
+      refreshTableRegion();
+      break;
+  }
+});
+
+/* ---------------- export to CSV / PDF ---------------- */
+async function exportData(format){
+  try{
+    const token = getToken();
+    const res = await fetch(API_BASE + '/export/' + format, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
+    if(!res.ok){
+      const body = await res.json().catch(function(){ return {}; });
+      throw new Error(body.error || 'Export failed.');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'duetrack-export.' + format;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('success', (format === 'csv' ? 'CSV' : 'PDF') + ' export downloaded.');
+  }catch(e){
+    showToast('error', e.message || 'Could not export data.');
+  }
+}
+
+document.addEventListener('input', function(e){
+  if(e.target.id === 'searchInput'){
+    state.ui.search = e.target.value;
+    state.ui.page = 1;
+    refreshTableRegion();
+  } else if(e.target.id === 'totalAmount' || e.target.id === 'paidAmount'){
+    updateDuePreview();
+  }
+});
+
+document.addEventListener('submit', function(e){
+  if(!e.target || !e.target.id) return;
+  if(e.target.id === 'setupForm'){ e.preventDefault(); handleSetupSubmit(); }
+  else if(e.target.id === 'loginForm'){ e.preventDefault(); handleLoginSubmit(); }
+  else if(e.target.id === 'addDueForm'){ e.preventDefault(); handleAddDueSubmit(e.target); }
+  else if(e.target.id === 'editCustomerForm'){ e.preventDefault(); handleEditCustomerSubmit(e.target); }
+  else if(e.target.id === 'paymentForm'){ e.preventDefault(); handlePaymentSubmit(e.target); }
+});
+
+/* ---------------- edit customer ---------------- */
+async function handleEditCustomerSubmit(form){
+  ['editName','editPhone','editService','editTotal'].forEach(clearFieldError);
+  const id = form.dataset.id;
+
+  const name = document.getElementById('editName').value.trim();
+  const phone = document.getElementById('editPhone').value.trim();
+  const service = document.getElementById('editService').value.trim();
+  const totalRaw = document.getElementById('editTotal').value.trim();
+
+  let valid = true;
+  if(!name || name.length < 2){ showFieldError('editName','Enter the customer full name.'); valid=false; }
+  if(!phone || !isValidPhone(phone)){ showFieldError('editPhone','Enter a valid phone number.'); valid=false; }
+  const total = parseFloat(totalRaw);
+  if(totalRaw==='' || isNaN(total) || total < 0){ showFieldError('editTotal','Enter a valid total amount.'); valid=false; }
+  if(!valid) return;
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = true;
+
+  try{
+    await apiPut('/customers/' + id, { name: name, phone: phone, service: service, total: total });
+    showToast('success', 'Record updated for ' + name + '.');
+    state.ui.modal = null;
+    state.customers = await loadCustomers();
+    renderApp();
+    refreshDashboardData();
+  }catch(e){
+    showToast('error', e.message || 'Could not update the record.');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+}
+
+/* ---------------- record payment ---------------- */
+async function handlePaymentSubmit(form){
+  clearFieldError('paymentAmount');
+  const id = form.dataset.id;
+  const amountRaw = document.getElementById('paymentAmount').value.trim();
+  const note = document.getElementById('paymentNote').value.trim();
+  const amount = parseFloat(amountRaw);
+
+  if(amountRaw === '' || isNaN(amount) || amount <= 0){
+    showFieldError('paymentAmount', 'Enter a valid payment amount.');
+    return;
+  }
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = true;
+
+  try{
+    const r = await apiPost('/customers/' + id + '/payments', { amount: amount, note: note });
+    state.ui.modal = null;
+    state.customers = await loadCustomers();
+    renderApp();
+    refreshDashboardData();
+    showToast('success', r.customer.status === 'Paid'
+      ? 'Payment recorded — balance fully cleared!'
+      : 'Payment of ' + fmt(amount) + ' recorded.');
+  }catch(e){
+    showFieldError('paymentAmount', e.message || 'Could not record the payment.');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && state.ui.modal){
+    state.ui.modal = null;
+    renderApp();
+  }
+});
+
+/* ---------------- init ---------------- */
+async function init(){
+  state.auth.screen = 'loading';
+  renderApp();
+
+  const existingAccount = await loadAccount(); // resolves only if a valid token is already stored
+
+  if(existingAccount){
+    state.account = existingAccount;
+    state.session.loggedIn = true;
+    state.route = 'dashboard';
+    await refreshDashboardData();
+  } else {
+    state.auth.screen = 'login'; // multi-tenant app: default to login, with a link to register
+  }
+  renderApp();
+}
+init();
+</script>
+</body>
+</html>
