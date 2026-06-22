@@ -434,7 +434,7 @@ function initialsOf(name){
    before this script runs (or edit API_BASE below) to point at
    your deployed backend, e.g. https://your-api.onrender.com/api
 ------------------------------------------------ */
-const API_BASE = window.DUETRACK_API_BASE || 'https://duetrack.onrender.com';
+const API_BASE = window.DUETRACK_API_BASE || 'https://duetrack.onrender.com/api';;
 const TOKEN_KEY = 'duetrack_token';
 
 function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
